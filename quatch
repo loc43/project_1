@@ -1,0 +1,399 @@
+import pygame
+import random
+import os
+import time
+import sys
+import pygame.font
+import codecs
+
+WIDTH = 1000
+HEIGHT = 800
+
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+RED = (255, 0, 0)
+GREEN = (0, 255, 0)
+BLUE = (50, 153, 213)
+PURPLE = (255, 0, 255)
+
+FPS = 60
+
+running = True
+
+cactus_que = []
+cloud_que = []
+ptero_que = []
+bonus_que = []
+
+game_over = False
+
+total_score = 0
+bonus_timer = 0
+max_score = 0
+
+all_sprites = pygame.sprite.Group()
+
+pygame.init()
+pygame.mixer.init()
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("NOTHING TO WRITE HOME ABOUT: THE GAME")
+clock = pygame.time.Clock()
+screen.fill(WHITE)
+#создали поле
+
+
+game_folder = os.path.dirname(__file__)
+img_folder = os.path.join(game_folder, 'dino')
+
+dino_1 = pygame.transform.scale(pygame.image.load(os.path.join(img_folder, 'dino_1.png')).convert_alpha(), (100, 100))
+dino_2 = pygame.transform.scale(pygame.image.load(os.path.join(img_folder, 'dino_2.png')).convert_alpha(), (100, 100))
+dino_hat_1 = pygame.transform.scale(pygame.image.load(os.path.join(img_folder, 'dino_hat_1.png')).convert_alpha(), (100, 120))
+dino_hat_2 = pygame.transform.scale(pygame.image.load(os.path.join(img_folder, 'dino_hat_2.png')).convert_alpha(), (100, 120))
+duck_1 = pygame.transform.scale(pygame.image.load(os.path.join(img_folder, 'duck_1.png')).convert_alpha(), (120, 60))
+duck_2 = pygame.transform.scale(pygame.image.load(os.path.join(img_folder, 'duck_2.png')).convert_alpha(), (120, 60))
+dino_arr = [dino_1, dino_1, dino_1, dino_1, dino_2, dino_2, dino_2, dino_2]
+duck_arr = [duck_1, duck_1, duck_1, duck_1, duck_2, duck_2, duck_2, duck_2]
+hat_arr = [dino_hat_1, dino_hat_1, dino_hat_1, dino_hat_1, dino_hat_2, dino_hat_2, dino_hat_2, dino_hat_2]
+
+#создаем динозавра
+
+class Player(pygame.sprite.Sprite):
+    def __init__(self):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = dino_1
+        self.rect = self.image.get_rect()
+        self.rect.bottomleft = (WIDTH / 15, HEIGHT / 1.5)
+        self.ducking = False
+        self.jumping = False 
+        self.hat = False
+        self.idx = 0
+        self.duck_idx = 0
+        self.hat_idx = 0
+        self.height = 100
+
+    def wear_hat(self):
+        self.hat = True
+        self.image = dino_hat_1
+        tmp = self.rect.bottomleft
+        self.rect = self.image.get_rect()
+        self.rect.bottomleft = tmp
+        self.height = 120
+
+    def lose_hat(self):
+        self.hat = False
+        self.image = dino_1
+        tmp = self.rect.bottomleft
+        self.rect = self.image.get_rect()
+        self.rect.bottomleft = tmp
+        self.height = 100
+
+    def move(self):
+        if not self.ducking and not self.hat:
+            self.image = dino_arr[self.idx % 8]
+            self.idx += 1    
+        elif self.ducking:
+            self.image = duck_arr[self.duck_idx % 8]
+            self.duck_idx += 1    
+        elif not self.ducking and self.hat:
+            self.image = hat_arr[self.hat_idx % 8]
+            self.hat_idx += 1  
+
+    def duck(self):
+        self.image = duck_1
+        self.rect = self.image.get_rect()
+        self.rect.bottomleft = (WIDTH / 15, HEIGHT / 1.5)
+        self.ducking = True
+        self.height = 60
+
+    def straighten(self):
+        if self.hat:
+            self.image = dino_hat_1
+            self.height = 120
+        else:
+            self.image = dino_1
+            self.height = 100
+        self.rect = self.image.get_rect()
+        self.rect.bottomleft = (WIDTH / 15, HEIGHT / 1.5)
+        self.ducking = False
+
+dino = Player()
+all_sprites.add(dino)
+
+ptero_1 = pygame.transform.scale(pygame.image.load(os.path.join(img_folder, 'ptero_1.png')).convert_alpha(), (120, 60))
+ptero_2 = pygame.transform.scale(pygame.image.load(os.path.join(img_folder, 'ptero_2.png')).convert_alpha(), (120, 60))
+class Ptero(pygame.sprite.Sprite):
+    def __init__(self):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = ptero_1
+        self.rect = self.image.get_rect()
+        rand = random.choice([40, 80])
+        self.rect.bottomleft = (WIDTH, HEIGHT / 1.5 - rand)
+    def move(self):
+        if self.image == ptero_1:
+            self.image = ptero_2
+        elif self.image == ptero_2:
+            self.image = ptero_1
+
+
+hat = pygame.transform.scale(pygame.image.load(os.path.join(img_folder, 'hat.png')).convert_alpha(), (60, 40))
+class Bonus(pygame.sprite.Sprite):
+    def __init__(self):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = hat
+        self.rect = self.image.get_rect()
+        rand = random.choice([40, 150])
+        self.rect.bottomleft = (WIDTH, HEIGHT / 1.5 - rand)
+
+
+
+game_folder = os.path.dirname(__file__)
+img_folder = os.path.join(game_folder, 'cactus_place')
+
+cactus_img = pygame.image.load(os.path.join(img_folder, '1_cactus.png')).convert_alpha()
+cactus2_img = pygame.image.load(os.path.join(img_folder, '2_cactuses.png')).convert_alpha()
+cactus3_img = pygame.image.load(os.path.join(img_folder, '3_cactuses.png')).convert_alpha()
+cactus4_img = pygame.image.load(os.path.join(img_folder, '4_cactuses.png')).convert_alpha()
+class Cactus(pygame.sprite.Sprite):
+    def __init__(self):
+        pygame.sprite.Sprite.__init__(self)
+        self.height = random.randint(75, 120)
+        self.width = self.height * 2 / 3
+        self.image = random.choice([cactus3_img, cactus_img, cactus2_img, cactus4_img])
+
+        if self.image == cactus3_img:
+            self.width *= 1.6
+            self.image = pygame.transform.scale(self.image, (self.width, self.height))
+
+        elif self.image == cactus2_img:
+            self.width *= 1.3
+            self.image = pygame.transform.scale(self.image, (self.width, self.height))
+            
+        elif self.image == cactus_img:
+            self.image = pygame.transform.scale(self.image, (self.width, self.height))
+        
+        if self.image == cactus4_img:
+            self.width *= 2
+            self.image = pygame.transform.scale(self.image, (self.width, self.height))
+
+        self.rect = self.image.get_rect()
+        self.rect.bottomleft = (WIDTH, HEIGHT / 1.5)
+cactus = Cactus()
+all_sprites.add(cactus)
+cactus_que.append(cactus) 
+
+
+cloud_img = pygame.transform.scale(pygame.image.load(os.path.join(img_folder, 'cloud.png')).convert_alpha(), (100, 50))
+class Cloud(pygame.sprite.Sprite):
+    def __init__(self):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = cloud_img
+        self.rect = self.image.get_rect()
+        self.rect.bottomleft = (WIDTH, random.randint(100, 200))
+
+
+def draw_score(counter):
+    f1 = pygame.font.SysFont('playbill', 48)
+    text1 = f1.render("Total score:" + str(counter), True, BLACK)
+    screen.blit(text1, (10, 50))
+
+
+def draw_max(counter):
+    f1 = pygame.font.SysFont('playbill', 48)
+    text1 = f1.render('Best score:' + str(counter), True, BLACK)
+    screen.blit(text1, (10, 100))
+
+def draw_bonus():
+    f1 = pygame.font.SysFont('playbill', 48)
+    text1 = f1.render('Congratulations! Your bonus: ' + 'The Hat of Immortality', True, BLACK)
+    screen.blit(text1, (WIDTH / 3, 50))
+    f2 = pygame.font.SysFont('playbill', 48)
+    text2 = f2.render('Your ability: temporal immortality', True, BLACK)
+    screen.blit(text2, (WIDTH / 3, 100))
+
+
+
+def normal_changes():
+    for item in cactus_que:
+        item.rect.x -= 6
+        if item.rect.x < - item.width:
+            cactus_que.pop(0)
+    for item in cloud_que:
+        item.rect.x -= 2
+        if item.rect.x < - 100:
+            cloud_que.pop(0)
+    for item in ptero_que:
+        item.rect.x -= 6
+        item.move()
+        if item.rect.x < - 140:
+            ptero_que.pop(0)
+    for item in bonus_que:
+        item.rect.x -= 6
+        if item.rect.x < - 60:
+            bonus_que.pop(0)
+    all_sprites.update()
+    screen.fill(WHITE)
+    all_sprites.draw(screen)
+
+#двигаем все
+def basic_frame():
+    global FPS
+    global total_score
+    global max_score
+    global bonus_timer
+    normal_changes()
+    clock.tick(FPS)
+    total_score += 1
+    if total_score % 500 == 0:
+        FPS += 10
+    if max_score < total_score:
+        max_score = total_score
+    if lose_check() and not dino.hat:
+        losing_screen()
+    if bonus_check() and not dino.hat:
+        dino.wear_hat()
+        bonus_timer = 1
+    if dino.hat:
+        bonus_timer += 1
+    if bonus_timer > 1 and bonus_timer < 4.5 * FPS:
+        draw_bonus()
+    if bonus_timer > 5 * FPS and dino.hat:
+       bonus_timer = 0
+       dino.lose_hat()
+    draw_score(total_score // 10)
+    draw_max(max_score // 10)
+    pygame.display.update()
+
+
+def stable_frame():
+    dino.move()
+    basic_frame()
+
+
+def lose_check():
+    for elem in cactus_que:
+        if pygame.sprite.collide_rect_ratio(0.8)(dino, elem):
+            return True
+    for elem in ptero_que:
+        if pygame.sprite.collide_rect(dino, elem):
+            return True
+    return False
+
+def bonus_check():
+    for elem in bonus_que:
+        if pygame.sprite.collide_rect(dino, elem):
+            elem.kill()
+            return True
+    return False
+
+def losing_screen():
+    global game_over
+    global FPS
+    screen.fill(BLUE)
+    f1 = pygame.font.SysFont('playbill', 48)
+    text1 = f1.render("You Lost! Press C-Play Again or Q-Quit", True, BLACK)
+    screen.blit(text1, (WIDTH / 4, HEIGHT / 2))
+    clock.tick(3)
+    pygame.display.update()
+    flag = True
+    while flag:
+        for event in pygame.event.get():
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_q:
+                    flag = False
+                    pygame.quit()
+                    sys.exit()
+                if event.key == pygame.K_c:
+                    game_over = True
+                    restart()
+                    flag = False
+            elif event.type == pygame.QUIT:
+                flag = False
+                pygame.quit()
+                sys.exit()
+
+def restart():
+    global FPS
+    global total_score
+    global game_over
+    screen.fill(WHITE)
+    FPS = 60
+    total_score = 0
+    dino.straighten()
+    dino.lose_hat()
+    pygame.event.clear()
+    cactus_que.clear()
+    cloud_que.clear()
+    ptero_que.clear()
+    bonus_que.clear()
+    all_sprites.empty()
+    dino.rect.bottomleft = (WIDTH / 15, HEIGHT / 1.5)
+    all_sprites.add(dino)
+    all_sprites.draw(screen)
+    game_over = False
+
+def one_jump():
+    while (dino.rect.y > (HEIGHT / 1.5 - dino.height) - 260):
+        if total_score == 0:
+            dino.rect.bottomleft = (WIDTH / 15, HEIGHT / 1.5)
+            return
+        dino.rect.y -= 10 
+        basic_frame()
+    for i in range(max(20 - total_score // 100, 3)): 
+        if total_score == 0:
+            dino.rect.bottomleft = (WIDTH / 15, HEIGHT / 1.5)
+            return
+        basic_frame()
+    while (dino.rect.y < HEIGHT / 1.5 - dino.height):
+        if total_score == 0:
+            dino.rect.bottomleft = (WIDTH / 15, HEIGHT / 1.5)
+            return
+        dino.rect.y += 10 
+        basic_frame()
+
+
+def item_generator(Class, que, probability, time_1, time_2):
+    global FPS
+    waiting_time = random.randint(time_1, time_2)
+    t_0 = time.perf_counter()
+    flag = random.randint(1, probability)
+    if flag == 1:
+        while time.perf_counter() - t_0 < waiting_time / FPS:
+            one_move_generator()
+        new_item = Class()
+        que.append(new_item)
+        all_sprites.add(new_item)
+        all_sprites.remove(dino)
+        all_sprites.add(dino)
+
+
+def one_move_generator(): 
+    global FPS
+    stable_frame()
+    pygame.display.update()
+    for event in pygame.event.get():
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE and not dino.ducking:
+            dino.jumping = True
+            one_jump()
+            dino.jumping = False
+            pygame.event.clear()
+        elif event.type == pygame.KEYDOWN and event.key == pygame.K_DOWN:
+            dino.duck()
+        elif event.type == pygame.KEYUP and event.key == pygame.K_DOWN:
+            dino.straighten()
+        elif event.type == pygame.QUIT:
+            pygame.quit()
+            sys.exit()
+
+
+def game():
+    global FPS
+    global total_score
+    if not dino.hat and total_score > 50:
+        item_generator(Bonus, bonus_que, 1, 20, 40)
+    item_generator(Cactus, cactus_que, 1, 100, 150)
+    item_generator(Cloud, cloud_que, 3, 20, 40)
+    if total_score > 1000:
+        item_generator(Ptero, ptero_que, 5, 100, 150)
+    
+while True:
+    game()
