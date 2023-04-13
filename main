@@ -1,0 +1,37 @@
+import random
+import time
+import classes
+import globals
+import draw_frames
+
+
+dino = classes.dino
+cactus = classes.cactus
+globals.all_sprites.add(dino)
+globals.all_sprites.add(cactus)
+globals.cactus_que.append(cactus) 
+
+
+def item_generator(Class, que, probability, time_1, time_2):
+    waiting_time = random.randint(time_1, time_2)
+    t_0 = time.perf_counter()
+    flag = random.randint(1, probability)
+    if flag == 1:
+        while time.perf_counter() - t_0 < waiting_time / globals.FPS:
+            draw_frames.one_move_generator()
+        new_item = Class()
+        que.append(new_item)
+        globals.all_sprites.add(new_item)
+        globals.all_sprites.remove(classes.dino)
+        globals.all_sprites.add(classes.dino)
+
+def game():
+    if not classes.dino.hat and globals.total_score > 500:
+        item_generator(classes.Bonus, globals.bonus_que, 7, 20, 40)
+    item_generator(classes.Cactus, globals.cactus_que, 1, 100, 150)
+    item_generator(classes.Cloud, globals.cloud_que, 3, 20, 40)
+    if globals.total_score > 1000:
+        item_generator(classes.Ptero, globals.ptero_que, 5, 100, 150)
+    
+while True:
+    game()
