@@ -1,8 +1,7 @@
-import pygame
-import random
 from draw_screen import hat_arr, dino_arr, duck_arr, dino_1, dino_hat_1, duck_1, ptero_1, ptero_2, hat, cactus_img, cactus2_img, cactus3_img, cactus4_img, cloud_img
 from globals import WIDTH, HEIGHT
-
+import pygame
+import random
 
 
 #создаем динозавра
