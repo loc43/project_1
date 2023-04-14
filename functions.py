@@ -1,8 +1,10 @@
-import pygame
-import pygame.font
+from classes import dino
 from draw_screen import screen
 import globals
-from classes import dino
+import pygame
+import pygame.font
+
+
 
 
 def draw_score(counter):
