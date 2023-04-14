@@ -1,7 +1,7 @@
-from draw_screen import screen, clock
 from classes import dino
-import globals
+from draw_screen import screen, clock
 import functions
+import globals
 import pygame
 import sys
 
