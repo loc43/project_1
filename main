@@ -1,8 +1,8 @@
+import classes
+import draw_frames
+import globals
 import random
 import time
-import classes
-import globals
-import draw_frames
 
 
 dino = classes.dino
