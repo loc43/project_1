@@ -1,7 +1,7 @@
+import globals
 import pygame
 import pygame.font
 from draw_screen import screen
-import globals
 from classes import dino
 
 
